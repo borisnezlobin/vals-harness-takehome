@@ -1,12 +1,13 @@
+import shutil
 import subprocess
 import time
 import uuid
-from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from agentic_harness.agent import Agent
+from agentic_harness.agent import Agent, AgentError
 from agentic_harness.benchmark import Benchmark, BenchmarkError, Task
+from agentic_harness.containers import DEFAULT_LIMITS, ContainerLimits
 
 WORKSPACES_DIR = Path("workspaces")
 AGENT_TIMEOUT_SECONDS = 600
@@ -28,18 +29,21 @@ def new_run_id() -> str:
     return uuid.uuid4().hex[:8]
 
 
-def run_task(benchmark: Benchmark, agent: Agent, task: Task, run_dir: Path) -> TaskResult:
+def run_task(
+    benchmark: Benchmark, agent: Agent, task: Task, run_dir: Path, limits: ContainerLimits = DEFAULT_LIMITS
+) -> TaskResult:
     started = time.monotonic()
     task_dir = run_dir / task.id
     workspace = task_dir / "workspace"
+    shutil.rmtree(task_dir, ignore_errors=True)
     workspace.mkdir(parents=True)
     try:
-        benchmark.setup(task, workspace)
+        benchmark.setup(task, workspace, limits)
         agent_run = agent.run(
-            task.prompt, benchmark.image_for(task), workspace, task_dir / "agent", AGENT_TIMEOUT_SECONDS
+            task.prompt, benchmark.image_for(task), workspace, task_dir / "agent", AGENT_TIMEOUT_SECONDS, limits
         )
-        grade = benchmark.grade(task, workspace)
-    except (BenchmarkError, subprocess.SubprocessError) as error:
+        grade = benchmark.grade(task, workspace, limits)
+    except (BenchmarkError, AgentError, subprocess.SubprocessError) as error:
         return TaskResult(task.id, "error", 0.0, time.monotonic() - started, error=str(error))
     return TaskResult(
         task.id,
@@ -51,18 +55,3 @@ def run_task(benchmark: Benchmark, agent: Agent, task: Task, run_dir: Path) -> T
         details=grade.details,
     )
 
-
-def run_benchmark(
-    benchmark: Benchmark, agent: Agent, tasks: list[Task], run_id: str,
-    on_start: Callable[[Task], None] = lambda task: None,
-    on_result: Callable[[TaskResult], None] = lambda result: None,
-) -> list[TaskResult]:
-    benchmark.build_image()
-    run_dir = WORKSPACES_DIR / run_id
-    results = []
-    for task in tasks:
-        on_start(task)
-        result = run_task(benchmark, agent, task, run_dir)
-        on_result(result)
-        results.append(result)
-    return results

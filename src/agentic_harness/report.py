@@ -4,6 +4,8 @@ import sqlite3
 FINISHED_STATUSES = ("passed", "failed", "error")
 TABLE_HEADERS = ("Task", "Status", "Score", "Time", "Error")
 ERROR_PREVIEW_LENGTH = 60
+PROGRESS_BAR_WIDTH = 30
+LIST_BAR_WIDTH = 20
 
 
 def build_report(run: sqlite3.Row, task_rows: list[sqlite3.Row]) -> dict:
@@ -51,12 +53,43 @@ def format_status(report: dict) -> str:
     counts = f"{metrics['passed']} passed, {metrics['failed']} failed, {metrics['errors']} errors"
     lines = [
         f"Run {report['run_id']}: {report['status']} ({report['agent']} on {report['benchmark']})",
-        f"  {metrics['finished']} of {metrics['total']} tasks finished: {counts}",
+        f"  {progress_bar(metrics['finished'], metrics['total'])}  {metrics['finished']}/{metrics['total']} finished: {counts}",
     ]
     running = [task["task_id"] for task in report["tasks"] if task["status"] == "running"]
     if running:
         lines.append(f"  Running now: {', '.join(running)}")
     return "\n".join(lines)
+
+
+def progress_bar(finished: int, total: int, width: int = PROGRESS_BAR_WIDTH) -> str:
+    filled = round(width * finished / total) if total else width
+    return "█" * filled + "░" * (width - filled)
+
+
+def format_run_list(active: list[dict], recently_finished: list[dict]) -> str:
+    lines = ["Active runs:", *(active_run_line(report) for report in active)]
+    if not active:
+        lines = ["No runs are queued or running."]
+    if recently_finished:
+        lines += ["", "Recently finished:", *(finished_run_line(report) for report in recently_finished)]
+    return "\n".join(lines)
+
+
+def active_run_line(report: dict) -> str:
+    metrics = report["metrics"]
+    bar = progress_bar(metrics["finished"], metrics["total"], LIST_BAR_WIDTH)
+    return (
+        f"  {report['run_id']}  {report['status']:<7}  {bar}  {metrics['finished']}/{metrics['total']}  "
+        f"{report['benchmark']} ({report['agent']})"
+    )
+
+
+def finished_run_line(report: dict) -> str:
+    metrics = report["metrics"]
+    return (
+        f"  {report['run_id']}  {metrics['passed']}/{metrics['total']} passed ({metrics['accuracy']:.0%})  "
+        f"{report['benchmark']} ({report['agent']})"
+    )
 
 
 def format_summary(report: dict) -> str:
@@ -78,8 +111,14 @@ def format_table(report: dict) -> str:
 def table_row(task: dict) -> tuple[str, ...]:
     score = "" if task["score"] is None else f"{task['score']:.1f}"
     duration = "" if task["duration_seconds"] is None else f"{task['duration_seconds']:.0f}s"
-    error = task["error"].splitlines()[0][:ERROR_PREVIEW_LENGTH] if task["error"] else ""
-    return (task["task_id"], task["status"], score, duration, error)
+    return (task["task_id"], task["status"], score, duration, error_preview(task["error"]))
+
+
+def error_preview(error: str | None) -> str:
+    if not error:
+        return ""
+    last_line = error.strip().splitlines()[-1]
+    return last_line if len(last_line) <= ERROR_PREVIEW_LENGTH else "…" + last_line[-ERROR_PREVIEW_LENGTH:]
 
 
 def format_json(report: dict) -> str:

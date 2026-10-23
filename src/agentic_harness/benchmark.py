@@ -3,7 +3,12 @@ import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
-from agentic_harness.containers import Mount, run_container
+from agentic_harness.containers import (
+    DEFAULT_LIMITS,
+    ContainerLimits,
+    Mount,
+    run_container,
+)
 
 BENCHMARKS_DIR = Path("benchmarks")
 
@@ -74,19 +79,23 @@ class Benchmark:
     def image_for(self, task: Task) -> str:
         return task.image or self.image_tag
 
-    def setup(self, task: Task, workspace: Path, timeout_seconds: int = 300) -> None:
-        result = self._run_phase("setup", task, workspace, timeout_seconds)
+    def setup(
+        self, task: Task, workspace: Path, limits: ContainerLimits = DEFAULT_LIMITS, timeout_seconds: int = 300
+    ) -> None:
+        result = self._run_phase("setup", task, workspace, limits, timeout_seconds)
         if result.returncode != 0:
             raise BenchmarkError(f"setup.sh failed for {task.id}: {result.stderr.strip()[-500:]}")
 
-    def grade(self, task: Task, workspace: Path, timeout_seconds: int = 300) -> Grade:
-        result = self._run_phase("grade", task, workspace, timeout_seconds)
+    def grade(
+        self, task: Task, workspace: Path, limits: ContainerLimits = DEFAULT_LIMITS, timeout_seconds: int = 300
+    ) -> Grade:
+        result = self._run_phase("grade", task, workspace, limits, timeout_seconds)
         return Grade.from_report(result.stdout, result.stderr)
 
-    def _run_phase(self, phase: str, task: Task, workspace: Path, timeout_seconds: int):
+    def _run_phase(self, phase: str, task: Task, workspace: Path, limits: ContainerLimits, timeout_seconds: int):
         mounts = [Mount(workspace, "/workspace"), Mount(self.root, "/benchmark", read_only=True)]
         command = [f"/benchmark/harness/{phase}.sh", task.id]
-        return run_container(self.image_for(task), command, mounts, timeout_seconds)
+        return run_container(self.image_for(task), command, mounts, timeout_seconds, limits)
 
     @staticmethod
     def _select(tasks: list[Task], task_ids: list[str]) -> list[Task]:
