@@ -1,10 +1,7 @@
-from pathlib import Path
-
 import pytest
+from support import BENCHMARKS_DIR
 
 from agentic_harness.benchmark import Benchmark, BenchmarkError
-
-BENCHMARKS_DIR = Path(__file__).resolve().parents[1] / "benchmarks"
 
 
 def load(name: str) -> Benchmark:

@@ -3,6 +3,8 @@ import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
+from agentic_harness.containers import Mount, run_container
+
 BENCHMARKS_DIR = Path("benchmarks")
 
 
@@ -15,6 +17,21 @@ class Task:
     id: str
     prompt: str
     image: str | None = None
+
+
+@dataclass(frozen=True)
+class Grade:
+    passed: bool
+    score: float
+    details: dict
+
+    @classmethod
+    def from_report(cls, stdout: str, stderr: str) -> "Grade":
+        try:
+            report = json.loads(stdout)
+        except json.JSONDecodeError as error:
+            raise BenchmarkError(f"grade.sh did not print JSON: {stderr.strip()[-500:]}") from error
+        return cls(bool(report["passed"]), float(report["score"]), report.get("details", {}))
 
 
 @dataclass(frozen=True)
@@ -56,6 +73,20 @@ class Benchmark:
 
     def image_for(self, task: Task) -> str:
         return task.image or self.image_tag
+
+    def setup(self, task: Task, workspace: Path, timeout_seconds: int = 300) -> None:
+        result = self._run_phase("setup", task, workspace, timeout_seconds)
+        if result.returncode != 0:
+            raise BenchmarkError(f"setup.sh failed for {task.id}: {result.stderr.strip()[-500:]}")
+
+    def grade(self, task: Task, workspace: Path, timeout_seconds: int = 300) -> Grade:
+        result = self._run_phase("grade", task, workspace, timeout_seconds)
+        return Grade.from_report(result.stdout, result.stderr)
+
+    def _run_phase(self, phase: str, task: Task, workspace: Path, timeout_seconds: int):
+        mounts = [Mount(workspace, "/workspace"), Mount(self.root, "/benchmark", read_only=True)]
+        command = [f"/benchmark/harness/{phase}.sh", task.id]
+        return run_container(self.image_for(task), command, mounts, timeout_seconds)
 
     @staticmethod
     def _select(tasks: list[Task], task_ids: list[str]) -> list[Task]:
