@@ -19,3 +19,23 @@ build-backend = "hatchling.build"
 
 [tool.uv.sources]
 mini-swe-agent = { path = "agents/mini-swe-agent", editable = true }
+
+[dependency-groups]
+dev = [
+    "ruff>=0.17.2",
+]
+
+[tool.ruff]
+extend-exclude = [
+    "agents",
+    "benchmarks/*/setup.py",
+    "benchmarks/*/evaluate.py",
+    "benchmarks/*/prepare.py",
+    "benchmarks/*/grade.py",
+]
+
+[tool.ruff.lint]
+extend-select = ["C901"]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 15
