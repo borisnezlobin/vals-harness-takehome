@@ -36,6 +36,7 @@ class HostResources:
 
 class QueueLock:
     def __init__(self, path: Path = LOCK_PATH):
+        self.path = path
         self.file = path.open("a")
 
     def acquire(self) -> bool:
@@ -43,10 +44,20 @@ class QueueLock:
             fcntl.flock(self.file, fcntl.LOCK_EX | fcntl.LOCK_NB)
         except BlockingIOError:
             return False
+        self.file.truncate(0)
+        self.file.write(str(os.getpid()))
+        self.file.flush()
         return True
 
     def release(self) -> None:
         fcntl.flock(self.file, fcntl.LOCK_UN)
+
+    def holder_pid(self) -> int | None:
+        if self.acquire():
+            self.release()
+            return None
+        holder = self.path.read_text().strip()
+        return int(holder) if holder.isdigit() else None
 
 
 class WorkerPool:

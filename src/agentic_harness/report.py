@@ -66,13 +66,19 @@ def progress_bar(finished: int, total: int, width: int = PROGRESS_BAR_WIDTH) -> 
     return "█" * filled + "░" * (width - filled)
 
 
-def format_run_list(active: list[dict], recently_finished: list[dict]) -> str:
-    lines = ["Active runs:", *(active_run_line(report) for report in active)]
+def format_run_list(active: list[dict], recently_finished: list[dict], runner_pid: int | None) -> str:
+    lines = ["Active runs:", *(active_run_line(report) for report in active), runner_line(runner_pid)]
     if not active:
         lines = ["No runs are queued or running."]
     if recently_finished:
         lines += ["", "Recently finished:", *(finished_run_line(report) for report in recently_finished)]
     return "\n".join(lines)
+
+
+def runner_line(runner_pid: int | None) -> str:
+    if runner_pid is None:
+        return "Nothing is working through the queue. Start it with: harness run"
+    return f"Working through the queue: PID {runner_pid}"
 
 
 def active_run_line(report: dict) -> str:

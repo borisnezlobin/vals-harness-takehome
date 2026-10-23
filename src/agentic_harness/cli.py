@@ -1,6 +1,7 @@
 """CLI for the agentic harness system."""
 
 import subprocess
+import sys
 import time
 
 import click
@@ -12,7 +13,7 @@ from agentic_harness.containers import (
     ContainerLimits,
     remove_labeled_containers,
 )
-from agentic_harness.pipeline import new_run_id
+from agentic_harness.pipeline import WORKSPACES_DIR, new_run_id
 from agentic_harness.progress import QueueProgress
 from agentic_harness.report import (
     FORMATTERS,
@@ -25,6 +26,7 @@ from agentic_harness.worker import HostResources, QueueLock, WorkerPool
 
 PROGRESS_REFRESH_SECONDS = 0.5
 RECENT_RUNS_SHOWN = 5
+RUNNER_LOG_PATH = WORKSPACES_DIR / "runner.log"
 
 
 @click.group()
@@ -66,9 +68,14 @@ def cli():
     default=2.0,
     help="Memory each task's containers may use, in GB (default: 2)",
 )
+@click.option(
+    "--background",
+    is_flag=True,
+    help="Work through the queue in a background process and return right away",
+)
 def run(
     agent: str | None, benchmark: str | None, task_ids: str | None,
-    workers: int | None, task_cpus: float, task_memory_gb: float,
+    workers: int | None, task_cpus: float, task_memory_gb: float, background: bool,
 ):
     """Add a run to the queue, then work through the queue until it's empty.
 
@@ -84,7 +91,27 @@ def run(
         click.echo("Another harness run is already working through the queue. It will get to everything queued.")
         return
     limits = ContainerLimits(cpus=task_cpus, memory_gb=task_memory_gb)
+    if background:
+        lock.release()
+        start_background_runner(workers, limits)
+        return
     work_through_queue(store, lock, workers, limits)
+
+
+def start_background_runner(workers: int | None, limits: ContainerLimits) -> None:
+    command = [
+        sys.executable, "-m", "agentic_harness.cli", "run",
+        "--task_cpus", str(limits.cpus), "--task_memory_gb", str(limits.memory_gb),
+    ]
+    if workers:
+        command += ["--workers", str(workers)]
+    RUNNER_LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
+    with RUNNER_LOG_PATH.open("a") as log:
+        runner = subprocess.Popen(
+            command, stdin=subprocess.DEVNULL, stdout=log, stderr=subprocess.STDOUT, start_new_session=True
+        )
+    click.echo(f"Working through the queue in the background (PID {runner.pid}). Its output goes to {RUNNER_LOG_PATH}.")
+    click.echo(f"Check on it with: harness status. Stop it like Ctrl-C would with: kill -INT -{runner.pid}")
 
 
 def queue_run(store: Store, agent: str, benchmark: str, task_ids: str | None) -> None:
@@ -139,9 +166,7 @@ def default_worker_count(limits: ContainerLimits) -> int:
     resources = HostResources.detect()
     budget = resources.worker_budget(limits)
     click.echo(
-        f"Running {pluralize(budget, 'task')} at a time. That's as many as fit in half of this machine's "
-        f"{resources.cpus} CPUs and {resources.memory_bytes / 1024**3:.0f} GB at "
-        f"{limits.cpus:g} CPU and {limits.memory_gb:g} GB per task."
+        f"Running {pluralize(budget, 'task')} at a time."
     )
     return budget
 
@@ -167,7 +192,7 @@ def status(run_id: str | None):
         return
     active = [load_report(store, active_id) for active_id in store.get_unfinished_run_ids()]
     recent = [load_report(store, recent_id) for recent_id in store.get_recent_finished_run_ids(RECENT_RUNS_SHOWN)]
-    click.echo(format_run_list(active, recent))
+    click.echo(format_run_list(active, recent, QueueLock().holder_pid()))
 
 
 @cli.command()
