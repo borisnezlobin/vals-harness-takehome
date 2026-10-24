@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "run_id": "20261023-164113",
+  "started_at": "2026-10-23T23:41:13+00:00",
+  "models": [
+    "deepseek/deepseek-v4.1-flash",
+    "nvidia/nemotron-3-super-120b-a12b",
+    "openai/gpt-oss-120b"
+  ],
+  "scenarios": [
+    {
+      "name": "used-car",
+      "item": "a 2009 Honda Civic with 180,000 miles, running but with a cracked windshield",
+      "seller_minimum": 500,
+      "buyer_maximum": 600,
+      "reference_price": 550.0,
+      "reserves_overlap": true
+    },
+    {
+      "name": "used-car-no-overlap",
+      "item": "a 2009 Honda Civic with 180,000 miles, running but with a cracked windshield",
+      "seller_minimum": 600,
+      "buyer_maximum": 500,
+      "reference_price": 550.0,
+      "reserves_overlap": false
+    },
+    {
+      "name": "house",
+      "item": "a three-bedroom house on a quarter-acre lot that needs a new roof",
+      "seller_minimum": 420000,
+      "buyer_maximum": 465000,
+      "reference_price": 442500.0,
+      "reserves_overlap": true
+    },
+    {
+      "name": "guitar-no-overlap",
+      "item": "a 1978 Fender Stratocaster with original pickups and some finish wear",
+      "seller_minimum": 3200,
+      "buyer_maximum": 2900,
+      "reference_price": 3050.0,
+      "reserves_overlap": false
+    },
+    {
+      "name": "laptop-wide-overlap",
+      "item": "a two-year-old 14-inch MacBook Pro with 32 GB of memory and a small dent in the lid",
+      "seller_minimum": 700,
+      "buyer_maximum": 1100,
+      "reference_price": 900.0,
+      "reserves_overlap": true
+    }
+  ],
+  "repeats": 2,
+  "total_games": 60,
+  "settings": {
+    "turns_per_side": 10,
+    "message_char_limit": 1000,
+    "max_penalty": 1.0,
+    "max_output_tokens": 4000,
+    "temperature": null,
+    "request_attempts": 4
+  }
+}

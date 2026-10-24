@@ -1,0 +1,128 @@
+{
+  "schema_version": 1,
+  "run_id": "20261023-164113",
+  "status": "finished",
+  "updated_at": "2026-10-24T02:56:05+00:00",
+  "finished_at": "2026-10-24T02:56:05+00:00",
+  "completed_games": 60,
+  "total_games": 60,
+  "cost_usd": 0.477283264868,
+  "leaderboard": [
+    {
+      "model": "deepseek/deepseek-v4.1-flash",
+      "games": 40,
+      "deals": 40,
+      "mean_score": 0.11353534120932088,
+      "buyer": {
+        "games": 20,
+        "deals": 20,
+        "mean_score": 0.11081604799437686,
+        "mean_surplus_share": 0.9268750000000001
+      },
+      "seller": {
+        "games": 20,
+        "deals": 20,
+        "mean_score": 0.11625463442426487,
+        "mean_surplus_share": 0.9267361111111111
+      },
+      "mean_turns": 17.275,
+      "rejected_actions": 1,
+      "api_errors": 0,
+      "cost_usd": 0.2010953148680001
+    },
+    {
+      "model": "openai/gpt-oss-120b",
+      "games": 40,
+      "deals": 40,
+      "mean_score": 0.034970805339395936,
+      "buyer": {
+        "games": 20,
+        "deals": 20,
+        "mean_score": 0.07844231766449758,
+        "mean_surplus_share": 0.6335416666666667
+      },
+      "seller": {
+        "games": 20,
+        "deals": 20,
+        "mean_score": -0.008500706985705701,
+        "mean_surplus_share": 0.19055555555555553
+      },
+      "mean_turns": 17.1,
+      "rejected_actions": 8,
+      "api_errors": 0,
+      "cost_usd": 0.029453104999999993
+    },
+    {
+      "model": "nvidia/nemotron-3-super-120b-a12b",
+      "games": 40,
+      "deals": 40,
+      "mean_score": -0.0012597030980349402,
+      "buyer": {
+        "games": 20,
+        "deals": 20,
+        "mean_score": 0.034391828645805395,
+        "mean_surplus_share": 0.4070138888888889
+      },
+      "seller": {
+        "games": 20,
+        "deals": 20,
+        "mean_score": -0.03691123484187527,
+        "mean_surplus_share": -0.08472222222222223
+      },
+      "mean_turns": 17.675,
+      "rejected_actions": 7,
+      "api_errors": 0,
+      "cost_usd": 0.24673484499999998
+    }
+  ],
+  "pairings": [
+    {
+      "buyer_model": "deepseek/deepseek-v4.1-flash",
+      "seller_model": "nvidia/nemotron-3-super-120b-a12b",
+      "games": 10,
+      "deals": 10,
+      "mean_buyer_score": 0.11112636506773768,
+      "mean_seller_score": -0.014830234230152662
+    },
+    {
+      "buyer_model": "deepseek/deepseek-v4.1-flash",
+      "seller_model": "openai/gpt-oss-120b",
+      "games": 10,
+      "deals": 10,
+      "mean_buyer_score": 0.11050573092101604,
+      "mean_seller_score": -0.014773591184983828
+    },
+    {
+      "buyer_model": "nvidia/nemotron-3-super-120b-a12b",
+      "seller_model": "deepseek/deepseek-v4.1-flash",
+      "games": 10,
+      "deals": 10,
+      "mean_buyer_score": -0.03442172968899954,
+      "mean_seller_score": 0.12923414472594802
+    },
+    {
+      "buyer_model": "nvidia/nemotron-3-super-120b-a12b",
+      "seller_model": "openai/gpt-oss-120b",
+      "games": 10,
+      "deals": 10,
+      "mean_buyer_score": 0.10320538698061033,
+      "mean_seller_score": -0.002227822786427574
+    },
+    {
+      "buyer_model": "openai/gpt-oss-120b",
+      "seller_model": "deepseek/deepseek-v4.1-flash",
+      "games": 10,
+      "deals": 10,
+      "mean_buyer_score": -0.009668637287636403,
+      "mean_seller_score": 0.10327512412258175
+    },
+    {
+      "buyer_model": "openai/gpt-oss-120b",
+      "seller_model": "nvidia/nemotron-3-super-120b-a12b",
+      "games": 10,
+      "deals": 10,
+      "mean_buyer_score": 0.16655327261663155,
+      "mean_seller_score": -0.058992235453597885
+    }
+  ]
+}
